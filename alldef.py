@@ -162,16 +162,27 @@ def Cus_life_time(data):
                                         observation_period_end='2018-08-29', datetime_format='%Y-%m-%d', freq='W')
 
 
-    st.write(rfm_val.head(5))
-
     bgf_val = BetaGeoFitter(penalizer_coef=0.001)
     bgf_val.fit(rfm_val['frequency_cal'], rfm_val['recency_cal'], rfm_val['T_cal'], verbose=True)
 
-    st.write(bgf_val)
+    # ploting 
+    from lifetimes.plotting import plot_period_transactions
 
-    fig = plt.figure(figsize=(12,8))
-    plot_calibration_purchases_vs_holdout_purchases(model=bgf_val, calibration_holdout_matrix=rfm_val)
-    st.pyplot(plt)
+    fig, axes = plt.subplots(2, 1, figsize=(12, 16))
+
+    # Biểu đồ 1 - plot_period_transactions
+    ax1 = axes[0]
+    plot_period_transactions(bgf_val, ax=ax1)
+    ax1.set_yscale('log')
+    ax1.set_title('Period Transactions')
+
+    # Biểu đồ 2 - plot_calibration_purchases_vs_holdout_purchases
+    ax2 = axes[1]
+    plot_calibration_purchases_vs_holdout_purchases(model=bgf_val, calibration_holdout_matrix=rfm_val, ax=ax2)
+    ax2.set_title('Calibration vs Holdout Purchases')
+
+    st.pyplot(fig)
+
     # Mo Hình gamma-gamma    
     rfm_gg = rfm[rfm['frequency'] > 0]
 
@@ -191,6 +202,7 @@ def Cus_life_time(data):
                     time=26, discount_rate=0.01, freq='W'))
     dp = rfm.sort_values(by='CLV', ascending=False)
     # Display the Table 
+    st.write('Customer lifetime')
     st.write(dp)
 
     # Clustering
@@ -207,5 +219,5 @@ def Cus_life_time(data):
     clusters.groupby('cluster').agg(['max','min'])['CLV']
     clusters['cluster'].replace(to_replace=[0,1,2], value = ['Non-Profitable', 'Very Profitable', 'Profitable'], inplace=True)
     dp2 = clusters.sort_values(by='CLV', ascending=False)
-
+    st.write('Table After Clustering')
     st.write(dp2)

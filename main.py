@@ -1,17 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-import pickle
 import nltk
-nltk.download('stopwords')
-from nltk.corpus import stopwords
-stopwords = stopwords.words("portuguese")
 
 from alldef import main_reason, predict, draw_nlp_plot, associate, Cus_life_time
 
