@@ -22,7 +22,8 @@ if st.sidebar.button("Run"):
     if option == "Reviews Comment Analyst":
         # Thực hiện hàm tương ứng với Reviews Analyst
         if file is not None:
-            # Xử lý tệp tin đã tải lên
+            st.write("Running Reviews Comment Analyst with uploaded file:", file.name)
+
             df = predict(df)
             # Chạy hàm main_reason
             draw_nlp_plot(df,'Positive' )
