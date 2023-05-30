@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from alldef import main_reason, predict, draw_nlp_plot, associate, Cus_life_time
-
+stopwords = []
 
 option = st.sidebar.selectbox("Select an Option", ["Reviews Comment Analyst", "Association Rule", "Customer Life time"])
 file = st.sidebar.file_uploader("Upload a file")
