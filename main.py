@@ -49,7 +49,7 @@ if st.sidebar.button("Run"):
             # Xử lý tệp tin đã tải lên
             st.write("Running Customer Life time with uploaded file:", file.name)
 
-            Cus_life_time(df)
+            Cus_life_time(df, slider_value)
         else:
             st.write("Please upload a file for Customer Life time")
 

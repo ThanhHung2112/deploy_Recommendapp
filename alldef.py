@@ -24,11 +24,14 @@ from lifetimes import BetaGeoFitter
 from lifetimes.utils import calibration_and_holdout_data
 from lifetimes.plotting import plot_calibration_purchases_vs_holdout_purchases
 from sklearn.preprocessing import StandardScaler
+from googletrans import Translator
+
+
 # Định nghĩa hàm main_reason(label, data, stopwords)
 
 
 def predict(data):
-    
+
     loaded_model = pickle.load(open('trained_model.sav', 'rb'))
     vector = pickle.load(open('vector_conv.sav', 'rb'))
 
@@ -44,11 +47,15 @@ def predict(data):
 
     return df_ans
 
+def translate_text(text, target_language = "vietnamese"):
+    translator = Translator()
+    translation = translator.translate(text, dest=target_language)
+    return translation.text
+
 def main_reason(label, data , stopwords):
 
     # Load mô hình đã huấn luyện
     df_ans = data.copy()
-    
 
     # Tìm lý do chính
     sentiments = df_ans[df_ans['Sentiments'] == label]['review_comment_message']
@@ -137,7 +144,7 @@ def associate (data,sp):
 
     return
 
-def Cus_life_time(data):
+def Cus_life_time(data, week):
 
     df = data.copy()
     # tạo bảng rfm từ thư viên
@@ -148,13 +155,14 @@ def Cus_life_time(data):
     bgf = BetaGeoFitter(penalizer_coef=0.001)
     bgf.fit(rfm['frequency'], rfm['recency'], rfm['T'], verbose=True)
     print(bgf)
-
+    
     t = 4 # Weeks for a future transaction 
     rfm['expected_'+str(t)+'week'] = round(bgf.conditional_expected_number_of_purchases_up_to_time(t, rfm['frequency'], rfm['recency'], rfm['T']), 2)
     rfm.sort_values(by='expected_'+str(t)+'week', ascending=False)
     rfm['expected_8week'] = round(bgf.predict(8, rfm['frequency'], rfm['recency'], rfm['T']), 2)
-    rfm['expected_12week'] = round(bgf.predict(12, rfm['frequency'], rfm['recency'], rfm['T']), 2)  
-    rfm.sort_values(by='expected_12week', ascending=False)
+    rfm['expected_12week'] = round(bgf.predict(12, rfm['frequency'], rfm['recency'], rfm['T']), 2)
+    rfm['expected_'+str(week) + 'week'] = round(bgf.predict(week, rfm['frequency'], rfm['recency'], rfm['T']), 2)  
+    rfm.sort_values(by='expected_'+str(week) + 'week', ascending=False)
 
     
 
@@ -200,7 +208,7 @@ def Cus_life_time(data):
 
     rfm['CLV'] = round(ggf.customer_lifetime_value(bgf, rfm['frequency'],
                     rfm['recency'], rfm['T'], rfm['monetary_value'],
-                    time=26, discount_rate=0.01, freq='W'))
+                    time=week, discount_rate=0.01, freq='W'))
     dp = rfm.sort_values(by='CLV', ascending=False)
     # Display the Table 
     st.write('Customer lifetime')
@@ -218,7 +226,7 @@ def Cus_life_time(data):
 
     clusters['cluster'] = labels
     clusters.groupby('cluster').agg(['max','min'])['CLV']
-    clusters['cluster'].replace(to_replace=[0,1,2], value = ['Non-Profitable', 'Very Profitable', 'Profitable'], inplace=True)
+    clusters['cluster'].replace(to_replace=[0,1,2], value = ['Non-Profitable', 'Profitable, 'Very Profitable'], inplace=True)
     dp2 = clusters.sort_values(by='CLV', ascending=False)
     st.write('Table After Clustering')
     st.write(dp2)
