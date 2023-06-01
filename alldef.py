@@ -28,7 +28,7 @@ from sklearn.preprocessing import StandardScaler
 
 
 def predict(data):
-
+    
     loaded_model = pickle.load(open('trained_model.sav', 'rb'))
     vector = pickle.load(open('vector_conv.sav', 'rb'))
 
@@ -48,6 +48,7 @@ def main_reason(label, data , stopwords):
 
     # Load mô hình đã huấn luyện
     df_ans = data.copy()
+    
 
     # Tìm lý do chính
     sentiments = df_ans[df_ans['Sentiments'] == label]['review_comment_message']
@@ -56,7 +57,7 @@ def main_reason(label, data , stopwords):
 
     # Hiện bảng
     df_label = df_ans[df_ans['Sentiments'] == label]
-    st.header('Reviews with' + str(label)+ 'sentiments:')
+    st.header('Reviews with ' + str(label)+ ' sentiments:')
     st.write(df_label)
 
     # Áp dụng K-means clustering
@@ -139,11 +140,11 @@ def associate (data,sp):
 def Cus_life_time(data):
 
     df = data.copy()
-
+    # tạo bảng rfm từ thư viên
     rfm = summary_data_from_transaction_data(df, customer_id_col='customer_unique_id', datetime_col='order_purchase_timestamp', 
                                     monetary_value_col ='payment_value', observation_period_end='2018-08-29', 
                                     datetime_format='%Y-%m-%d', freq='W')
-    
+    # dùng phân phối
     bgf = BetaGeoFitter(penalizer_coef=0.001)
     bgf.fit(rfm['frequency'], rfm['recency'], rfm['T'], verbose=True)
     print(bgf)
