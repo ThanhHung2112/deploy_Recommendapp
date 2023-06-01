@@ -226,7 +226,7 @@ def Cus_life_time(data, week):
 
     clusters['cluster'] = labels
     clusters.groupby('cluster').agg(['max','min'])['CLV']
-    clusters['cluster'].replace(to_replace=[0,1,2], value = ['Non-Profitable', 'Profitable, 'Very Profitable'], inplace=True)
+    clusters['cluster'].replace(to_replace=[0,1,2], value = ['Non-Profitable', 'Profitable', 'Very Profitable'], inplace=True)
     dp2 = clusters.sort_values(by='CLV', ascending=False)
     st.write('Table After Clustering')
     st.write(dp2)
