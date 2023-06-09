@@ -32,12 +32,13 @@ from googletrans import Translator
 
 def predict(data):
 
-    loaded_model = pickle.load(open('trained_model.sav', 'rb'))
-    vector = pickle.load(open('vector_conv.sav', 'rb'))
+    loaded_model = pickle.load(open('model/svm_plane.sav', 'rb'))
+    vector = pickle.load(open('model/vector_conv.sav', 'rb'))
 
     # Chuẩn bị dữ liệu cho việc tìm lý do chính
     df_ans = data.copy()
-    df_ans['Sentiments'] = ''  # Thêm cột 'Sentiments' rỗng
+    df_ans['Sentiments'] = '' 
+    df_ans=df_ans.dropna(subset=['review_comment_message']) # Thêm cột 'Sentiments' rỗng
     review_comment_messages = df_ans['review_comment_message'].tolist()
     vectors = vector.transform(review_comment_messages)
 
@@ -68,12 +69,22 @@ def main_reason(label, data , stopwords):
     st.write(df_label)
 
     # Áp dụng K-means clustering
-    k = 3  # Số cụm
+    k = 4  # Số cụm
     kmeans = KMeans(n_clusters=k, random_state=42)
     kmeans.fit(vectors)
 
     cluster_labels = kmeans.labels_
     cluster_centers = kmeans.cluster_centers_
+
+        # Clustering
+    wcss = []
+
+    for i in range(1, 20):
+        kmeans = KMeans(n_clusters=i, max_iter=1000, random_state=0)
+        kmeans.fit(vectors)
+        wcss.append(kmeans.inertia_)
+
+    # ebove(wcss)
 
     num_samples = 3
     similar_sentences = []
@@ -84,10 +95,21 @@ def main_reason(label, data , stopwords):
         closest_sentences = [sentiments.iloc[idx] for idx in cluster_indices[closest_indices]]
         similar_sentences.extend(closest_sentences)
 
+
     # Hiển thị các câu gần với tâm của từng cụm
     st.write("Display sentences that are close to the meaning of each cluster:")
     for i, sentence in enumerate(similar_sentences):
         st.write(sentence)
+        if i in [2,5,8]:
+            st.write('-------')
+
+def ebove(wcss):
+    plt.plot(range(1, 20), wcss)
+    plt.title('Elbow Method')
+    plt.xlabel('Number of clusters')
+    plt.ylabel('WCSS')
+    plt.show()
+    st.pyplot(plt)
 
 def draw_nlp_plot(data, label):
 
@@ -219,7 +241,6 @@ def Cus_life_time(data, week):
 
     scaler = StandardScaler()
     scaled = scaler.fit_transform(clusters)
-    scaled
     model = KMeans(n_clusters = 3, max_iter = 1000)
     model.fit(scaled)
     labels = model.labels_

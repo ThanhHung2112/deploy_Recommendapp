@@ -12,7 +12,8 @@ slider_value = st.sidebar.slider("Slider", 0, 100, 50)
 st.title("Recommend App")
 
 if file is not None:
-    df = pd.read_csv(file, index_col=False)
+    df = pd.read_csv(file, index_col=False, encoding='utf8')
+    
     st.write("Running Analyst with uploaded file:", file.name)
     st.write(df)
 else: st.write("Upload file to start analysis...")
