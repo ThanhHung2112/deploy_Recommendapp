@@ -32,8 +32,8 @@ from googletrans import Translator
 
 def predict(data):
 
-    loaded_model = pickle.load(open('model/svm_plane.sav', 'rb'))
-    vector = pickle.load(open('model/vector_conv.sav', 'rb'))
+    loaded_model = pickle.load(open('Model/svm_plane.sav', 'rb'))
+    vector = pickle.load(open('Model/vector_conv.sav', 'rb'))
 
     # Chuẩn bị dữ liệu cho việc tìm lý do chính
     df_ans = data.copy()
