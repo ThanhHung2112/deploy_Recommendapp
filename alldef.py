@@ -10,12 +10,17 @@ from sklearn.cluster import KMeans
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import re
 import pickle
 import nltk
 nltk.download('stopwords')
 from nltk.corpus import stopwords
-stopwords = stopwords.words("portuguese")
+# stopwords = stopwords.words("portuguese")
+import spacy.cli
+spacy.cli.download("en_core_web_sm")    
+import en_core_web_sm
+
+spc_en = en_core_web_sm.load()
 
 import lifetime
 from datetime import datetime
@@ -25,7 +30,9 @@ from lifetimes.utils import calibration_and_holdout_data
 from lifetimes.plotting import plot_calibration_purchases_vs_holdout_purchases
 from sklearn.preprocessing import StandardScaler
 from googletrans import Translator
-
+from collections import defaultdict
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Định nghĩa hàm main_reason(label, data, stopwords)
 
@@ -69,7 +76,7 @@ def main_reason(label, data , stopwords):
     st.write(df_label)
 
     # Áp dụng K-means clustering
-    k = 4  # Số cụm
+    k = 3 # Số cụm
     kmeans = KMeans(n_clusters=k, random_state=42)
     kmeans.fit(vectors)
 
@@ -86,22 +93,140 @@ def main_reason(label, data , stopwords):
 
     # ebove(wcss)
 
-    num_samples = 3
+    num_samples = 10
     similar_sentences = []
+    sentences = []
+
     for i in range(k):
         cluster_indices = np.where(cluster_labels == i)[0]
         distances = np.linalg.norm(vectors[cluster_indices] - cluster_centers[i], axis=1)
         closest_indices = np.argsort(distances)[:num_samples]
         closest_sentences = [sentiments.iloc[idx] for idx in cluster_indices[closest_indices]]
+        
         similar_sentences.extend(closest_sentences)
+        for i, sentence in enumerate(similar_sentences):
+            st.write(sentence)
+            if i ==10: break
+            # sentences.append(sentence)
+        # n-gram models
+        most_common_ngrams5, max_count = build_ngram_model(similar_sentences, 5)
+        most_common_ngrams4, max_count = build_ngram_model(similar_sentences, 4)
+        most_common_ngrams3, max_count = build_ngram_model(similar_sentences, 3)
+        most_common_ngrams2, max_count = build_ngram_model(similar_sentences, 2)
+        most_common_ngrams, max_count = build_ngram_model(similar_sentences, 1)
+
+
+        # most_common_ngrams, max_count = build_ngram_model(similar_sentences, 3)
+        for ngram in most_common_ngrams:
+                sentences.append(" ".join(ngram))
+        for ngram in most_common_ngrams2:
+                sentences.append(" ".join(ngram))
+        for ngram in most_common_ngrams3:
+                sentences.append(" ".join(ngram))
+        for ngram in most_common_ngrams4:
+                sentences.append(" ".join(ngram))
+        # for ngram in most_common_ngrams5:
+        #         sentences.append(" ".join(ngram))
+                # st.write(" ".join(ngram))
+        conclution = find_most_similarities(sentences)
+            
+        st.write(f">> Main: ",conclution)
+
+        st.write('-------')
+
+        similar_sentences = []
+        sentences = []
 
 
     # Hiển thị các câu gần với tâm của từng cụm
-    st.write("Display sentences that are close to the meaning of each cluster:")
-    for i, sentence in enumerate(similar_sentences):
-        st.write(sentence)
-        if i in [2,5,8]:
-            st.write('-------')
+    # st.write("Display sentences that are close to the meaning of each cluster:")
+    # for i, sentence in enumerate(similar_sentences):
+    #     st.write(sentence)
+    #     if i in [2,5,8]:
+    #         st.write('-------')
+
+####################################################################
+####################################################################    
+
+def find_most_similarities (sentences):
+    
+    vectorizer = CountVectorizer()
+    sentence_vectors = vectorizer.fit_transform(sentences)
+    cosine_similarities = cosine_similarity(sentence_vectors)
+    # Tìm câu có độ tương đồng cao nhất với các câu khác
+    most_similar_index = -1
+    max_similarity_score = -1
+    
+    for i in range(len(sentences)):
+        similarity_sum = 0
+        
+        for j in range(len(sentences)):
+            if i != j:
+                similarity_sum += cosine_similarities[i, j]
+        
+        average_similarity = similarity_sum / (len(sentences) - 1)
+        
+        if average_similarity > max_similarity_score:
+            max_similarity_score = average_similarity
+            most_similar_index = i
+
+    most_similar_sentence = sentences[most_similar_index]
+    # sentences3 = [sentence for sentence in sentences if len(sentence.split()) == 3]
+    # sentences4 = [sentence for sentence in sentences if len(sentence.split()) == 4]
+    result = most_similar_sentence  
+    # result = [sentence for sentence in sentences3 if most_similar_sentence in sentence]
+    # result = [sentence for sentence in sentences4 if most_similar_sentence in sentence]
+    # if len(result) ==1:
+         
+    return result
+    # else: return result
+    # print("Câu có độ tương đồng cao nhất:", most_similar_sentence)
+    
+    
+
+####################################################################
+####################################################################
+
+def preprocess_text(text):
+
+    stopwords_eng = stopwords.words("english")
+    text = text.lower()
+    text = text.replace(",", "").replace(".", "").replace("!", "").replace("?", "")
+
+    text = re.sub(r"[\W\d_]+", " ", text)
+
+    text = [pal for pal in text.split() if pal not in stopwords_eng]
+
+    spc_text = spc_en(" ".join(text))
+    tokens = [word.lemma_ if word.lemma_ != "-PRON-" else word.lower_ for word in spc_text]
+  
+    return " ".join(tokens)
+    
+
+####################################################################
+####################################################################
+
+def build_ngram_model(sentences, n):
+    # generate counters for each
+    ngram_counts = defaultdict(int)
+
+    for sentence in sentences:
+        sentence = preprocess_text(sentence)
+        words = sentence.split()
+
+        # generate bigrams
+        for i in range(len(words) - n + 1):
+            ngram = tuple(words[i:i+n])
+            ngram_counts[ngram] += 1
+
+    # highest probability
+    max_count = max(ngram_counts.values())
+    most_common_ngrams = [ngram for ngram, count in ngram_counts.items() if count >= max_count]
+
+    return most_common_ngrams, max_count
+
+####################################################################
+####################################################################
 
 def ebove(wcss):
     plt.plot(range(1, 20), wcss)
@@ -110,6 +235,9 @@ def ebove(wcss):
     plt.ylabel('WCSS')
     plt.show()
     st.pyplot(plt)
+
+####################################################################
+####################################################################
 
 def draw_nlp_plot(data, label):
 
@@ -134,6 +262,9 @@ def draw_nlp_plot(data, label):
 
     # Hiển thị biểu đồ trên Streamlit
     st.pyplot(plt)
+
+####################################################################
+####################################################################
 
 def associate (data,sp):
 
@@ -165,6 +296,9 @@ def associate (data,sp):
     st.write(df_ar)
 
     return
+
+####################################################################
+####################################################################
 
 def Cus_life_time(data, week):
 
