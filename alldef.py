@@ -38,7 +38,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 def predict(data):
-
+    # Model/svm_fixed_plane.sav
     loaded_model = pickle.load(open('Model/svm_plane.sav', 'rb'))
     vector = pickle.load(open('Model/vector_conv.sav', 'rb'))
 
